@@ -11,7 +11,7 @@ import static gateways.ConnectionFactoryGateway.getConnection;
 
 public class TempDestCreator {
 
-    public static Destination createTempDest(Client client, Session session) {
+    public static Destination createTempDest(MessageListener messageListener, Session session) {
         try {
             /*Properties props = new Properties();
             props.setProperty(Context.INITIAL_CONTEXT_FACTORY, "org.apache.activemq.jndi.ActiveMQInitialContextFactory");
@@ -23,7 +23,7 @@ public class TempDestCreator {
 
             Destination tempDest = session.createTemporaryQueue();
             MessageConsumer responseConsumer = session.createConsumer(tempDest);
-            responseConsumer.setMessageListener(client);
+            responseConsumer.setMessageListener(messageListener);
             //connection.start();
             return tempDest;
         }catch (JMSException e) {

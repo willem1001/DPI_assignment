@@ -29,13 +29,14 @@ public class MessageSenderGateway {
        this.session = session;
     }
 
-    public void send(String message, Destination destination) {
+    public void send(String message, Destination destination, Long timeSend) {
         try {
             producer = session.createProducer(destination);
             producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
             TextMessage m = session.createTextMessage(message);
             m.setText(message);
             m.setStringProperty("from", "client");
+            m.setLongProperty("timeSend", timeSend);
             producer.send(m);
         } catch (JMSException e) {
             e.printStackTrace();

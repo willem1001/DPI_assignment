@@ -46,7 +46,8 @@ public class Control {
                         Long timeStart = new Date().getTime();
                         int i = in.nextInt();
                         for (int j = 0; j < i; j++) {
-                            Client client = new Client(session, globalId);
+                            Client client = new Client(globalId);
+                            client.getClientGateway().setSession(session);
                             globalId++;
                             clients.add(client);
 
@@ -55,22 +56,22 @@ public class Control {
                         System.out.println("created " + i + " clients in " + (timeEnd - timeStart)/1000 + " seconds");
                         break;
                     case "broadcast":
-                        System.out.println("choose between 0 and " + (clients.size() - 1));
-                        index = in.nextInt();
+                        System.out.println("choose between 1 and " + (clients.size()));
+                        index = in.nextInt() - 1;
                         System.out.println("keyword:");
                         in.nextLine();
                         keyword = in.nextLine();
                         clients.get(index).broadCast(keyword);
-                        System.out.println("client " + index + " broadcasted " + keyword);
+                        System.out.println("client " + (index + 1) + " broadcasted " + keyword);
                         break;
                     case "upload":
-                        System.out.println("choose between 0 and " + (clients.size() - 1));
-                        index = in.nextInt();
+                        System.out.println("choose between 1 and " + (clients.size()));
+                        index = in.nextInt() - 1;
                         System.out.println("keyword:");
                         in.nextLine();
                         keyword = in.nextLine();
                         clients.get(index).upload(keyword, new Object());
-                        System.out.println("client " + index + " uploaded " + keyword);
+                        System.out.println("client " + (index + 1) + " uploaded " + keyword);
                         break;
                     case "exit":
                         isReading = false;

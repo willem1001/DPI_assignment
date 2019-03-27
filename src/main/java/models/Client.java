@@ -1,57 +1,43 @@
 package models;
 
-import gateways.MessageSenderGateway;
-import gateways.TopicGateway;
-
-import javax.jms.*;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Client implements MessageListener {
+public class Client {
 
     private Map<String, Object> uploads = new HashMap<>();
-    private TopicGateway topicGateway;
-    private MessageSenderGateway messageSenderGateway;
+    private ClientGateway clientGateway;
     private int id;
 
-    public Client(Session session, int id) {
+    public Client(int id) {
         this.id = id;
-        topicGateway = new TopicGateway(session);
-        topicGateway.subscribe(this);
+        clientGateway = new ClientGateway(this) {
+            @Override
+            public void onClientMessageReceived(String message, Long sendTime) {
+                System.out.println("received back " + message + " in " + sendTime + " miliseconds");
+            }
 
-        messageSenderGateway = new MessageSenderGateway(session);
+            @Override
+            public int onMatchesRequested(String keyword) {
+                int counter = 0;
+                for (String key : uploads.keySet()
+                ) {
+                    if (keyword.matches("(.*)" + key + "(.*)") || key.matches("(.*)" + keyword + "(.*)")) {
+                        counter++;
+                    }
+                }
+                return counter;
+            }
+        };
     }
 
     public void broadCast(String message) {
-        topicGateway.broadCast(message, this);
+        clientGateway.broadcastMessage(message);
     }
 
     public void upload(String keyword, Object object) {
         this.uploads.put(keyword, object);
-        topicGateway.changeFilter(this);
-    }
-
-    @Override
-    public void onMessage(Message message) {
-        TextMessage textMessage = (TextMessage) message;
-        try {
-            if(textMessage.getStringProperty("from").equals("topic")) {
-                System.out.println("client requests " + textMessage.getText());
-                int counter = 0;
-                String keyword = textMessage.getStringProperty("keyword");
-                for (String key: this.uploads.keySet()
-                     ) {
-                    if(keyword.matches("(.*)" + key + "(.*)") || key.matches("(.*)" + keyword + "(.*)")) {
-                        counter ++;
-                    }
-                }
-                messageSenderGateway.send("client " + this.id + " has " + counter + " results ", textMessage.getJMSReplyTo());
-            } else if (textMessage.getStringProperty("from").equals("client")) {
-                System.out.println("received back " + textMessage.getText());
-            }
-        } catch (JMSException e) {
-            e.printStackTrace();
-        }
+        clientGateway.onUpload();
     }
 
     public int getId() {
@@ -60,5 +46,9 @@ public class Client implements MessageListener {
 
     public Map<String, Object> getUploads() {
         return this.uploads;
+    }
+
+    public ClientGateway getClientGateway() {
+        return this.clientGateway;
     }
 }

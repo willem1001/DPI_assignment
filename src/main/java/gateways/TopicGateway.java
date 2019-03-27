@@ -1,6 +1,7 @@
 package gateways;
 
 import models.Client;
+import serializer.Serializer;
 
 import javax.jms.*;
 import java.util.*;
@@ -21,7 +22,8 @@ public class TopicGateway {
             Context jndiContext = new InitialContext(props);
             connection = ConnectionFactoryGateway.getConnection(jndiContext);
             session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            connection.start();*/
+            connection.start();*/;
+
             this.session = session;
             topic = session.createTopic("search");
 
@@ -31,19 +33,19 @@ public class TopicGateway {
         }
     }
 
-    public void subscribe(Client client) {
+    public void subscribe(Client client, MessageListener messageListener) {
         try {
             baseFilter = "NOT(senderId = " + client.getId() + ")";
             String filter = baseFilter;
             filter += " AND (keyword IS NULL)";
             consumer = session.createConsumer(topic, filter);
-            consumer.setMessageListener(client);
+            consumer.setMessageListener(messageListener);
         } catch (JMSException e) {
             e.printStackTrace();
         }
     }
 
-    public void changeFilter(Client client) {
+    public void changeFilter(Client client, MessageListener messageListener) {
         try {
             Map<String, Object> uploads = client.getUploads();
             consumer.close();
@@ -62,15 +64,15 @@ public class TopicGateway {
             }
 
             consumer = session.createConsumer(topic, filter.toString());
-            consumer.setMessageListener(client);
+            consumer.setMessageListener(messageListener);
         } catch (JMSException e) {
             e.printStackTrace();
         }
     }
 
-    public void broadCast(String message, Client client) {
+    public void broadCast(String message, Client client, MessageListener messageListener) {
         try {
-            Destination temp = TempDestCreator.createTempDest(client, session);
+            Destination temp = TempDestCreator.createTempDest(messageListener, session);
             TextMessage m = session.createTextMessage(message);
 
             m.setJMSReplyTo(temp);
@@ -78,6 +80,7 @@ public class TopicGateway {
             m.setStringProperty("from", "topic");
             m.setIntProperty("senderId", client.getId());
             m.setStringProperty("keyword", message);
+            m.setLongProperty("timeSend", System.currentTimeMillis());
 
             MessageProducer producer = session.createProducer(topic);
             producer.send(m);
