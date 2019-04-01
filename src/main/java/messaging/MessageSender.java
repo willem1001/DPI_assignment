@@ -1,40 +1,25 @@
-package gateways;
+package messaging;
 
 import javax.jms.*;
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import java.util.Properties;
 
-public class MessageSenderGateway {
-
-    private Connection connection;
+public class MessageSender {
     private Session session;
-    private MessageProducer producer;
 
-    public MessageSenderGateway(Session session) {
-       /* try {
-            Properties props = new Properties();
-            props.setProperty(Context.INITIAL_CONTEXT_FACTORY, "org.apache.activemq.jndi.ActiveMQInitialContextFactory");
-            props.setProperty(Context.PROVIDER_URL, "tcp://localhost:61616");
-            Context jndiContext = new InitialContext(props);
-            connection = ConnectionFactoryGateway.getConnection(jndiContext);
-            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            connection.start();
-        } catch (JMSException | NamingException e) {
-            e.printStackTrace();
-        } */
+    public MessageSender(Session session) {
         this.session = session;
     }
 
-    public void send(String message, Destination destination, Long timeSend) {
+    public void send(String message, TextMessage received) {
         try {
-            producer = session.createProducer(destination);
+
+            TemporaryQueue temporaryQueue = (TemporaryQueue) received.getJMSReplyTo();
+            MessageProducer producer = session.createProducer(temporaryQueue);
             producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
             TextMessage m = session.createTextMessage(message);
             m.setText(message);
             m.setStringProperty("from", "client");
-            m.setLongProperty("timeSend", timeSend);
+            m.setLongProperty("timeSend", received.getLongProperty("timeSend"));
+            m.setJMSCorrelationID(received.getJMSMessageID());
             producer.send(m);
         } catch (JMSException e) {
             e.printStackTrace();

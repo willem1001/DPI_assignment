@@ -1,15 +1,12 @@
 package control;
 
-import gateways.ConnectionFactoryGateway;
+import messaging.AQConnectionFactory;
 import models.Client;
-
 import javax.jms.Connection;
 import javax.jms.Session;
 import javax.naming.Context;
 import javax.naming.InitialContext;
-import java.sql.Time;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public class Control {
 
@@ -29,7 +26,7 @@ public class Control {
                     "org.apache.activemq.jndi.ActiveMQInitialContextFactory");
             props.setProperty(Context.PROVIDER_URL, "tcp://localhost:61616");
             Context jndiContext = new InitialContext(props);
-            Connection connection = ConnectionFactoryGateway.getConnection(jndiContext);
+            Connection connection = AQConnectionFactory.getConnection(jndiContext);
             session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             connection.start();
         } catch (Exception e) {
@@ -43,17 +40,17 @@ public class Control {
                 switch (s) {
                     case "create":
                         System.out.println("amount:");
-                        Long timeStart = new Date().getTime();
                         int i = in.nextInt();
+                        Long timeStart = System.currentTimeMillis();
                         for (int j = 0; j < i; j++) {
                             Client client = new Client(globalId);
                             client.getClientGateway().setSession(session);
+                            client.upload("hoi", "E:\\GitE\\DPI_assignment\\src\\main\\java\\models\\Upload.txt");
                             globalId++;
                             clients.add(client);
-
                         }
-                        Long timeEnd = new Date().getTime();
-                        System.out.println("created " + i + " clients in " + (timeEnd - timeStart)/1000 + " seconds");
+                        Long timeEnd = System.currentTimeMillis();
+                        System.out.println("created " + i + " clients in " + (timeEnd - timeStart) + " miliseconds");
                         break;
                     case "broadcast":
                         System.out.println("choose between 1 and " + (clients.size()));
@@ -70,7 +67,7 @@ public class Control {
                         System.out.println("keyword:");
                         in.nextLine();
                         keyword = in.nextLine();
-                        clients.get(index).upload(keyword, new Object());
+                        clients.get(index).upload(keyword, "E:\\GitE\\DPI_assignment\\src\\main\\java\\models\\Upload.txt");
                         System.out.println("client " + (index + 1) + " uploaded " + keyword);
                         break;
                     case "exit":

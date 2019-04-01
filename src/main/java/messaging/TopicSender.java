@@ -1,30 +1,22 @@
-package gateways;
+package messaging;
 
+import logic.FilterCreator;
+import models.AwaitingObj;
 import models.Client;
 import javax.jms.*;
 import java.util.*;
 
-public class TopicGateway {
-
+public class TopicSender {
     private Session session = null;
     private Topic topic = null;
     private MessageConsumer consumer;
-    private String baseFilter;
+    private MessageProducer producer;
 
-    public TopicGateway(Session session) {
+    public TopicSender(Session session) {
         try {
-            /*Properties props = new Properties();
-            props.setProperty(Context.INITIAL_CONTEXT_FACTORY,
-                    "org.apache.activemq.jndi.ActiveMQInitialContextFactory");
-            props.setProperty(Context.PROVIDER_URL, "tcp://localhost:61616");
-            Context jndiContext = new InitialContext(props);
-            connection = ConnectionFactoryGateway.getConnection(jndiContext);
-            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            connection.start();*/
-
             this.session = session;
-            topic = session.createTopic("search");
-
+            this.topic = session.createTopic("search");
+            this.producer = session.createProducer(topic);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -32,9 +24,7 @@ public class TopicGateway {
 
     public void subscribe(Client client, MessageListener messageListener) {
         try {
-            baseFilter = "NOT(senderId = " + client.getId() + ")";
-            String filter = baseFilter;
-            filter += " AND (keyword IS NULL)";
+            String filter = FilterCreator.createFilter(client);
             consumer = session.createConsumer(topic, filter);
             consumer.setMessageListener(messageListener);
         } catch (JMSException e) {
@@ -44,54 +34,34 @@ public class TopicGateway {
 
     public void changeFilter(Client client, MessageListener messageListener) {
         try {
-            Map<String, Object> uploads = client.getUploads();
             consumer.close();
-            StringBuilder filter = new StringBuilder(baseFilter);
-            if (uploads.size() > 0) {
-                filter.append(" AND (");
-                Iterator iterator = uploads.entrySet().iterator();
-                while (iterator.hasNext()) {
-                    Map.Entry entry = (Map.Entry) iterator.next();
-                    filter.append("(keyword LIKE '%").append(entry.getKey()).append("%')");
-                    if (iterator.hasNext()) {
-                        filter.append(" OR ");
-                    }
-                }
-                filter.append(")");
-            }
-
-            consumer = session.createConsumer(topic, filter.toString());
+            String filter = FilterCreator.createFilter(client);
+            consumer = session.createConsumer(topic, filter);
             consumer.setMessageListener(messageListener);
         } catch (JMSException e) {
             e.printStackTrace();
         }
     }
 
-    public void broadCast(String message, Client client, MessageListener messageListener) {
+    public Map<String, AwaitingObj> broadCast(String message, Client client, MessageListener messageListener) {
         try {
-            Destination temp = TempDestCreator.createTempDest(messageListener, session);
+            AwaitingObj awaitingObj = new AwaitingObj(client.getMaxResults());
+            TemporaryQueue temp = TempReceiverQueueCreator.createTempDest(messageListener, session, awaitingObj);
             TextMessage m = session.createTextMessage(message);
-
             m.setJMSReplyTo(temp);
-            m.setJMSCorrelationID(createRandomString());
             m.setStringProperty("from", "topic");
             m.setIntProperty("senderId", client.getId());
             m.setStringProperty("keyword", message);
             m.setLongProperty("timeSend", System.currentTimeMillis());
 
-            MessageProducer producer = session.createProducer(topic);
             producer.send(m);
+            Map<String, AwaitingObj> map = new HashMap<>();
+            map.put(m.getJMSMessageID(), awaitingObj);
+            return map;
 
         } catch (JMSException e) {
             e.printStackTrace();
         }
+        return null;
     }
-
-
-    private String createRandomString() {
-        Random random = new Random(System.currentTimeMillis());
-        long randomLong = random.nextLong();
-        return Long.toHexString(randomLong);
-    }
-
 }

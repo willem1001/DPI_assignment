@@ -1,35 +1,32 @@
-package models;
+package gateways;
 
-import gateways.MessageSenderGateway;
-import gateways.TopicGateway;
+import messaging.MessageSender;
+import messaging.TopicSender;
+import models.AwaitingObj;
+import models.Client;
+
 import javax.jms.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public abstract class ClientGateway implements MessageListener {
 
-    private TopicGateway topicGateway;
-    private MessageSenderGateway messageSenderGateway;
+    private TopicSender topicSender;
+    private MessageSender messageSender;
     private Client client;
+    private Map<String, AwaitingObj> awaiting = new HashMap<>();
 
-    ClientGateway(Client client) {
+    protected ClientGateway(Client client) {
         this.client = client;
-
     }
 
-    void broadcastMessage(String message) {
-        topicGateway.broadCast(message, client, this);
+    public void broadcastMessage(String message) {
+        awaiting.putAll(topicSender.broadCast(message, client, this));
     }
 
-    private void sendReturnMessage(String message, TextMessage request) {
-        try {
-            Long timeSend = request.getLongProperty("timeSend");
-            messageSenderGateway.send(message, request.getJMSReplyTo(), timeSend);
-        } catch (JMSException e) {
-            e.printStackTrace();
-        }
-    }
-
-    void onUpload() {
-        topicGateway.changeFilter(client, this);
+    public void onUpload() {
+        topicSender.changeFilter(client, this);
     }
 
     @Override
@@ -39,6 +36,11 @@ public abstract class ClientGateway implements MessageListener {
             String from = textMessage.getStringProperty("from");
             switch (from) {
                 case "client":
+                    String correlationId = message.getJMSCorrelationID();
+                    AwaitingObj awaitingObj = awaiting.get(correlationId);
+                    if(awaitingObj.onReceive()) {
+                        awaiting.remove(correlationId);
+                    }
                     Long timeReceived = System.currentTimeMillis();
                     Long timeSend = textMessage.getLongProperty("timeSend");
                     Long sendTime = timeReceived - timeSend;
@@ -46,8 +48,15 @@ public abstract class ClientGateway implements MessageListener {
                     break;
                 case "topic":
                     String keyword = textMessage.getStringProperty("keyword");
-                    int results = onMatchesRequested(keyword);
-                    sendReturnMessage("client " + client.getId() + " has " + results + " results", textMessage);
+                    List<String> results = onMatchesRequested(keyword);
+                    StringBuilder builder = new StringBuilder();
+                    builder.append("client " + client.getId() + " has " + results.size() + " results \n");
+                    for (String result: results
+                         ) {
+                        builder.append(result);
+                        builder.append(System.lineSeparator());
+                    }
+                    messageSender.send(builder.toString(), textMessage);
                     break;
                 default:
                     break;
@@ -58,13 +67,12 @@ public abstract class ClientGateway implements MessageListener {
     }
 
     public void setSession(Session session) {
-        topicGateway = new TopicGateway(session);
-        topicGateway.subscribe(client, this);
-
-        messageSenderGateway = new MessageSenderGateway(session);
+        topicSender = new TopicSender(session);
+        topicSender.subscribe(client, this);
+        messageSender = new MessageSender(session);
     }
 
-    abstract void onClientMessageReceived(String message, Long sendTime);
+    public abstract void onClientMessageReceived(String message, Long sendTime);
 
-    abstract int onMatchesRequested(String keyword);
+    public abstract List<String> onMatchesRequested(String keyword);
 }

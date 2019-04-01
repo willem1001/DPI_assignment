@@ -1,13 +1,18 @@
 package models;
 
+import gateways.ClientGateway;
+import gateways.ReaderWriter;
+
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Client {
-
-    private Map<String, Object> uploads = new HashMap<>();
+    private Map<String, String> uploads = new HashMap<>();
     private ClientGateway clientGateway;
     private int id;
+    private int maxResults = 5;
 
     public Client(int id) {
         this.id = id;
@@ -18,15 +23,15 @@ public class Client {
             }
 
             @Override
-            public int onMatchesRequested(String keyword) {
-                int counter = 0;
+            public List<String> onMatchesRequested(String keyword) {
+                List<String> results = new ArrayList<>();
                 for (String key : uploads.keySet()
                 ) {
                     if (keyword.matches("(.*)" + key + "(.*)") || key.matches("(.*)" + keyword + "(.*)")) {
-                        counter++;
+                        results.add(uploads.get(key));
                     }
                 }
-                return counter;
+                return results;
             }
         };
     }
@@ -35,8 +40,8 @@ public class Client {
         clientGateway.broadcastMessage(message);
     }
 
-    public void upload(String keyword, Object object) {
-        this.uploads.put(keyword, object);
+    public void upload(String keyword, String fileName) {
+        this.uploads.put(keyword, ReaderWriter.read(fileName));
         clientGateway.onUpload();
     }
 
@@ -44,11 +49,19 @@ public class Client {
         return this.id;
     }
 
-    public Map<String, Object> getUploads() {
+    public Map<String, String> getUploads() {
         return this.uploads;
     }
 
     public ClientGateway getClientGateway() {
         return this.clientGateway;
+    }
+
+    public int getMaxResults() {
+        return this.maxResults;
+    }
+
+    public void setMaxResults(int maxResults) {
+        this.maxResults = maxResults;
     }
 }
