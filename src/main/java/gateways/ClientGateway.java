@@ -2,7 +2,6 @@ package models;
 
 import gateways.MessageSenderGateway;
 import gateways.TopicGateway;
-
 import javax.jms.*;
 
 public abstract class ClientGateway implements MessageListener {
@@ -40,12 +39,9 @@ public abstract class ClientGateway implements MessageListener {
             String from = textMessage.getStringProperty("from");
             switch (from) {
                 case "client":
-
                     Long timeReceived = System.currentTimeMillis();
                     Long timeSend = textMessage.getLongProperty("timeSend");
-
                     Long sendTime = timeReceived - timeSend;
-
                     onClientMessageReceived(textMessage.getText(), sendTime);
                     break;
                 case "topic":

@@ -9,6 +9,9 @@ import javax.naming.NamingException;
 
 
 public class ConnectionFactoryGateway {
+
+    private ConnectionFactoryGateway() {}
+
     public static Connection getConnection(Context jndiContext) throws NamingException, JMSException {
         ActiveMQConnectionFactory connectionFactory = (ActiveMQConnectionFactory) jndiContext.lookup("ConnectionFactory");
         connectionFactory.setTrustAllPackages(true);

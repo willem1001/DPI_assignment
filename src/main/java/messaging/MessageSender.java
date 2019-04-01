@@ -10,8 +10,6 @@ public class MessageSenderGateway {
 
     private Connection connection;
     private Session session;
-
-    private Destination sendDestination;
     private MessageProducer producer;
 
     public MessageSenderGateway(Session session) {
@@ -26,7 +24,7 @@ public class MessageSenderGateway {
         } catch (JMSException | NamingException e) {
             e.printStackTrace();
         } */
-       this.session = session;
+        this.session = session;
     }
 
     public void send(String message, Destination destination, Long timeSend) {

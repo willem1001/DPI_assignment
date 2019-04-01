@@ -1,8 +1,6 @@
 package gateways;
 
 import models.Client;
-import serializer.Serializer;
-
 import javax.jms.*;
 import java.util.*;
 
@@ -22,11 +20,10 @@ public class TopicGateway {
             Context jndiContext = new InitialContext(props);
             connection = ConnectionFactoryGateway.getConnection(jndiContext);
             session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            connection.start();*/;
+            connection.start();*/
 
             this.session = session;
             topic = session.createTopic("search");
-
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -50,13 +47,13 @@ public class TopicGateway {
             Map<String, Object> uploads = client.getUploads();
             consumer.close();
             StringBuilder filter = new StringBuilder(baseFilter);
-            if(uploads.size() > 0) {
+            if (uploads.size() > 0) {
                 filter.append(" AND (");
                 Iterator iterator = uploads.entrySet().iterator();
                 while (iterator.hasNext()) {
                     Map.Entry entry = (Map.Entry) iterator.next();
                     filter.append("(keyword LIKE '%").append(entry.getKey()).append("%')");
-                    if(iterator.hasNext()) {
+                    if (iterator.hasNext()) {
                         filter.append(" OR ");
                     }
                 }
