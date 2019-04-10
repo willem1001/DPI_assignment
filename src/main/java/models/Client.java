@@ -1,7 +1,7 @@
 package models;
 
 import gateways.ClientGateway;
-import gateways.ReaderWriter;
+import gateways.Reader;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,8 +25,7 @@ public class Client {
             @Override
             public List<String> onMatchesRequested(String keyword) {
                 List<String> results = new ArrayList<>();
-                for (String key : uploads.keySet()
-                ) {
+                for (String key : uploads.keySet()) {
                     if (keyword.matches("(.*)" + key + "(.*)") || key.matches("(.*)" + keyword + "(.*)")) {
                         results.add(uploads.get(key));
                     }
@@ -41,7 +40,7 @@ public class Client {
     }
 
     public void upload(String keyword, String fileName) {
-        this.uploads.put(keyword, ReaderWriter.read(fileName));
+        this.uploads.put(keyword, Reader.read(fileName));
         clientGateway.onUpload();
     }
 

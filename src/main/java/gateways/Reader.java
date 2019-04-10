@@ -3,9 +3,9 @@ package gateways;
 import java.io.BufferedReader;
 import java.io.FileReader;
 
-public abstract class ReaderWriter {
+public abstract class Reader {
 
-    private ReaderWriter() {}
+    private Reader() {}
 
     public static String read(String file) {
         try {

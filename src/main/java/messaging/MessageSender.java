@@ -11,7 +11,6 @@ public class MessageSender {
 
     public void send(String message, TextMessage received) {
         try {
-
             TemporaryQueue temporaryQueue = (TemporaryQueue) received.getJMSReplyTo();
             MessageProducer producer = session.createProducer(temporaryQueue);
             producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);

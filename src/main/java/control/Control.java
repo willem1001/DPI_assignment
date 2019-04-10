@@ -17,6 +17,7 @@ public class Control {
         Session session = null;
         int globalId = 1;
         int index;
+        int count;
         String keyword;
         boolean isReading = true;
 
@@ -45,7 +46,6 @@ public class Control {
                         for (int j = 0; j < i; j++) {
                             Client client = new Client(globalId);
                             client.getClientGateway().setSession(session);
-                            client.upload("hoi", "E:\\GitE\\DPI_assignment\\src\\main\\java\\models\\Upload.txt");
                             globalId++;
                             clients.add(client);
                         }
@@ -72,6 +72,15 @@ public class Control {
                         break;
                     case "exit":
                         isReading = false;
+                        break;
+                    case "randomUpload":
+                        System.out.println("amount:");
+                        count = in.nextInt();
+                        for (int j = 0; j < count; j++) {
+                            int rand = new Random().nextInt(clients.size());
+                            clients.get(rand).upload("hoi", "E:\\GitE\\DPI_assignment\\src\\main\\java\\models\\Upload.txt");
+                        }
+                        System.out.println("done uploading");
                         break;
                     case "":
                         break;
